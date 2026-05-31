@@ -75,6 +75,7 @@ export function reportDiagnostic(reporter: Reporter) {
         )
     }
 }
+
 async function patchTypes(tsconfigPath: string, types: string[]) {
     try {
         const tsconfig = JSON.parse(await readFile(tsconfigPath, 'utf-8')) as {

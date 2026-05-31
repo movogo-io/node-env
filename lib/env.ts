@@ -15,6 +15,7 @@ import {
 import { EOL, platform } from 'node:os'
 import { join } from 'node:path'
 import { managedFiles as managedAgentFiles, setupAgents } from './agents.js'
+import { writeTSConfig } from './compiler.js'
 import { dependantPackages } from './dependencies.js'
 import { isFileNotFound } from './fs.js'
 import { install } from './npm.js'
@@ -131,6 +132,7 @@ export async function setup(targetDir: string, firstInstall: boolean, myself: bo
         makeWindowsNpmPackAndDevcontainerFriendly(targetDir),
         ensureUnlinked(targetDir, '.timestamps.json'),
     ])
+    await writeTSConfig(targetDir, dependencies)
     return []
 }
 
