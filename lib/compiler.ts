@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-for-each */
 import { readFile, writeFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'

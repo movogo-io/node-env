@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-for-each */
 // eslint-disable-next-line no-restricted-imports
 import fs from 'node:fs'
 import { join, relative, sep } from 'node:path'
@@ -45,14 +46,13 @@ export function watch(
                     reportWatchEvent(reporter, relative(path, name), time, kind)
                     abortController.abort()
                     abortController = new AbortController()
-                    filesChanged(true, false, [file], latestOutputs, abortController.signal).catch(
-                        (e: unknown) => {
-                            if ((e as { code: unknown }).code === 'ABORT_ERR') {
-                                return
-                            }
-                            console.error('Error handling file change:')
-                            console.error(e)
-                        },
+                    dispatchFilesChanged(
+                        filesChanged,
+                        true,
+                        false,
+                        [file],
+                        latestOutputs,
+                        abortController.signal,
                     )
                 },
                 500,
@@ -77,14 +77,13 @@ export function watch(
                     reportWatchEvent(reporter, file, new Date(), kind)
                     abortController.abort()
                     abortController = new AbortController()
-                    filesChanged(true, false, [file], latestOutputs, abortController.signal).catch(
-                        (e: unknown) => {
-                            if ((e as { code: unknown }).code === 'ABORT_ERR') {
-                                return
-                            }
-                            console.error('Error handling file change:')
-                            console.error(e)
-                        },
+                    dispatchFilesChanged(
+                        filesChanged,
+                        true,
+                        false,
+                        [file],
+                        latestOutputs,
+                        abortController.signal,
                     )
                 })
             } catch (e) {
@@ -194,19 +193,14 @@ export function watch(
         } else {
             console.log('no outputs')
         }
-        filesChanged(
+        dispatchFilesChanged(
+            filesChanged,
             diagnostics.length === 0,
             diagnostics.length !== 0 && diagnostics.every(d => d.code === 6053),
             programBuilder.getSourceFiles().map(sf => relative(dir, sf.fileName)),
             outputs,
             abortController.signal,
-        ).catch((e: unknown) => {
-            if ((e as { code: unknown }).code === 'ABORT_ERR') {
-                return
-            }
-            console.error('Error handling file changes:')
-            console.error(e)
-        })
+        )
     }
     const watcher = ts.createWatchProgram(host)
     const emitResult = watcher.getProgram().emit()
@@ -218,12 +212,55 @@ export function watch(
     }
     return {
         close: () => {
-            watchers.forEach(w => {
+            for (const w of watchers) {
                 w.close()
-            })
+            }
             watcher.close()
             abortController.abort()
         },
+    }
+}
+
+function dispatchFilesChanged(
+    filesChanged: (
+        success: boolean,
+        internalError: boolean,
+        inputFiles: string[],
+        outputFiles: string[] | undefined,
+        signal: AbortSignal,
+    ) => Promise<void>,
+    success: boolean,
+    internalError: boolean,
+    inputFiles: string[],
+    outputFiles: string[] | undefined,
+    signal: AbortSignal,
+) {
+    // eslint-disable-next-line no-void
+    void safeFilesChanged(filesChanged, success, internalError, inputFiles, outputFiles, signal)
+}
+
+async function safeFilesChanged(
+    filesChanged: (
+        success: boolean,
+        internalError: boolean,
+        inputFiles: string[],
+        outputFiles: string[] | undefined,
+        signal: AbortSignal,
+    ) => Promise<void>,
+    success: boolean,
+    internalError: boolean,
+    inputFiles: string[],
+    outputFiles: string[] | undefined,
+    signal: AbortSignal,
+) {
+    try {
+        await filesChanged(success, internalError, inputFiles, outputFiles, signal)
+    } catch (e) {
+        if ((e as { code: unknown }).code === 'ABORT_ERR') {
+            return
+        }
+        console.error('Error handling file changes:')
+        console.error(e)
     }
 }
 

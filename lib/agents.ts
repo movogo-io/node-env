@@ -145,7 +145,7 @@ ${r.body}`,
     const existingFiles = await readdir(directoryPath)
 
     for (const existingFile of existingFiles) {
-        if (!files.some(([name]) => name === existingFile)) {
+        if (files.every(([name]) => name !== existingFile)) {
             await unlink(join(directoryPath, existingFile))
         }
     }

@@ -16,20 +16,17 @@ export async function lint(
 ) {
     try {
         const results = await cache.lintFiles(files)
-        let ignoredWarnings = 0
         if (reporter) {
             for (const result of results) {
                 for (const msg of result.messages) {
-                    if (ignore(msg)) {
-                        ++ignoredWarnings
-                        continue
+                    if (!ignore(msg)) {
+                        reporter.error(
+                            msg.message,
+                            relative(path, result.filePath),
+                            msg.line,
+                            msg.column,
+                        )
                     }
-                    reporter.error(
-                        msg.message,
-                        relative(path, result.filePath),
-                        msg.line,
-                        msg.column,
-                    )
                 }
             }
             const deprecations = results
@@ -79,7 +76,7 @@ export async function fixLints(path: string, globPattern: string) {
         results.map(r => relative(path, r.filePath)),
     )
     return [...changed, ...fixables.map(r => relative(path, r.filePath))].map(f =>
-        mapping.reduce((pv, [, camel, kebab]) => pv.replace(camel, kebab), f),
+        mapping.reduce((pv, [, camel, kebab]) => pv.replace(camel, () => kebab), f),
     )
 }
 

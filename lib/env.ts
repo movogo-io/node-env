@@ -110,12 +110,12 @@ export async function setup(targetDir: string, firstInstall: boolean, myself: bo
             managedFiles.map(f => access(join(targetDir, f), mod)),
         )
         const existing: string[] = []
-        accessResult.forEach((r, ix) => {
+        for (const [ix, r] of accessResult.entries()) {
             if (r.status === 'fulfilled') {
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 existing.push(managedFiles[ix]!)
             }
-        })
+        }
         if (existing.length !== 0) {
             return existing
         }
@@ -206,10 +206,12 @@ node_modules/
     let modified = false
     if (packageJson.scripts) {
         for (const [key, value] of Object.entries(packageJson.scripts)) {
-            if (value.includes('@riddance/') || value.startsWith('riddance-')) {
-                delete packageJson.scripts[key]
-                modified = true
+            if (!value.includes('@riddance/') && !value.startsWith('riddance-')) {
+                continue
             }
+
+            delete packageJson.scripts[key]
+            modified = true
         }
     }
     if (packageJson.devDependencies?.['@riddance/env']) {
@@ -234,13 +236,22 @@ async function makeWindowsNpmPackAndDevcontainerFriendly(targetDir: string) {
         return
     }
     const path = join(targetDir, '.git', 'info', 'attributes')
-    if (!(await stat(path).catch(isFileNotFound))) {
+    if (!(await exists(path))) {
         return
     }
     await mkdir(join(targetDir, '.git', 'info'), { recursive: true })
     await writeFile(path, sourceExtensions.map(ext => `*${ext} text=auto eol=lf\n`).join(''))
     for await (const sourceFile of findFiles(targetDir, isSource)) {
         await dos2unix(sourceFile)
+    }
+}
+
+async function exists(path: string) {
+    try {
+        await stat(path)
+        return true
+    } catch (e) {
+        return !isFileNotFound(e)
     }
 }
 

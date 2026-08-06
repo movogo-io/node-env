@@ -93,13 +93,13 @@ export class Changes {
     }
 
     async shouldInstall() {
-        const oldestStage =
-            Object.values(this.#timestamps.stages)
-                .map(d => new Date(d).getTime())
-                .sort()
-                .at(0) ?? -1
-        const latestPackage =
-            (
+        const stages = Object.values(this.#timestamps.stages)
+        if (stages.length === 0) {
+            return true
+        }
+        const oldestStage = Math.min(...stages.map(d => new Date(d).getTime()))
+        const latestPackage = Math.max(
+            ...(
                 await Promise.all(
                     [
                         'package.json',
@@ -117,11 +117,19 @@ export class Changes {
                         }
                     }),
                 )
-            )
-                .map(s => s.ctimeMs)
-                .sort()
-                .at(-1) ?? 0
+            ).map(s => s.ctimeMs),
+        )
         return oldestStage < latestPackage
+    }
+
+    async stageComplete(stage: string) {
+        this.#timestamps.stages[stage] = new Date().toISOString()
+        await this.#saveTimestamps()
+    }
+    async clearStages() {
+        this.#timestamps.stages = {}
+        this.#lintCache = makeCache(this.#path)
+        await this.#saveTimestamps()
     }
 
     async #restartIfUpdated(reporter: Reporter) {
@@ -146,19 +154,9 @@ export class Changes {
         return false
     }
 
-    async stageComplete(stage: string) {
-        this.#timestamps.stages[stage] = new Date().toISOString()
-        await this.#saveTimestamps()
-    }
-    async clearStages() {
-        this.#timestamps.stages = {}
-        this.#lintCache = makeCache(this.#path)
-        await this.#saveTimestamps()
-    }
-
     async #ifChanged(stage: string, source: string[], fn: (src: string[]) => Promise<boolean>) {
         const { stages } = this.#timestamps
-        if (stages[stage]) {
+        if (Object.hasOwn(stages, stage)) {
             const lastSuccess = new Date(this.#timestamps.stages[stage] ?? 0).getTime()
             const stats = await Promise.all(
                 source.map(async s => {
@@ -273,7 +271,7 @@ async function checkNodeVersion(
             reporter?.error('Please specify node engine in package.json.')
             return false
         }
-        const [exeMajor] = process.version.slice(1).split('.')
+        const [exeMajor] = process.version.slice(1).split('.', 1)
         if (!exeMajor) {
             throw new Error('Unexpected node version: ' + process.version)
         }

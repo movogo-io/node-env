@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable unicorn/no-top-level-assignment-in-function */
 
 import { getSource, load } from '../lib/changes.js'
 import { sync } from '../lib/chrono.js'
@@ -41,6 +42,7 @@ function start(preCompileSuccess: boolean | undefined) {
                 return
             }
             if (isSpellingDictionaryFile(inputFiles)) {
+                // eslint-disable-next-line unicorn/prefer-simple-condition-first
                 if ((await spelling(reporter, cwd, getSource(lastInput), signal)) && lastGood) {
                     reporter.status('🚀  All good 👌')
                     await changes.stageComplete('spelling')

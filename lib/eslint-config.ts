@@ -401,6 +401,42 @@ export function configuration(dir: string) {
                 'unicorn/text-encoding-identifier-case': ['error', { withDash: true }],
                 'unicorn/no-unreadable-array-destructuring': 'off',
                 'unicorn/prefer-import-meta-properties': 'error',
+                'unicorn/consistent-class-member-order': [
+                    'error',
+                    {
+                        order: [
+                            'static-field',
+                            'static-block',
+                            'static-method',
+                            'public-field',
+                            'private-field',
+                            'constructor',
+                            'public-method',
+                            'private-method',
+                        ],
+                    },
+                ],
+                'unicorn/name-replacements': 'off',
+                'unicorn/consistent-boolean-name': 'off',
+                'unicorn/no-non-function-verb-prefix': 'off', // verbResponse: the response from verb; verbParams: the params for verb
+                'unicorn/no-useless-recursion': 'off',
+                'unicorn/no-unreadable-new-expression': 'off', // const thisYear = new Date().getFullYear()
+                'unicorn/no-unreadable-object-destructuring': 'off',
+                'unicorn/no-unreadable-for-of-expression': 'off',
+                'unicorn/try-complexity': 'off',
+                'unicorn/no-break-in-nested-loop': 'off',
+                'unicorn/consistent-arrow-return-style': 'off',
+                'unicorn/max-nested-calls': 'off',
+                'unicorn/no-nonstandard-builtin-properties': 'off',
+                'unicorn/no-duplicate-loops': 'off',
+                'unicorn/prefer-includes-over-repeated-comparisons': [
+                    'error',
+                    { minimumComparisons: 8 },
+                ],
+                // Next node
+                'unicorn/prefer-uint8array-base64': 'off',
+                'unicorn/prefer-temporal': 'off',
+                'unicorn/prefer-iterator-concat': 'off',
             },
         },
         {

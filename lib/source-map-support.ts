@@ -15,7 +15,7 @@ if (!process.env.STACK_TRACE_FULL_PATH) {
 
         const state = { nextPosition: null, curPosition: null }
         const processedStack: string[] = []
-        stack.toReversed().forEach(inner => {
+        for (const inner of stack.toReversed()) {
             const wrapped = wrapCallSite(inner as CallSite, state) as CallSite & {
                 toString: () => string
             }
@@ -31,7 +31,7 @@ if (!process.env.STACK_TRACE_FULL_PATH) {
             }
             processedStack.push(wrapped.toString())
             state.nextPosition = state.curPosition
-        })
+        }
         state.curPosition = state.nextPosition = null
         processedStack.reverse()
         const newLine = '\n    at '
