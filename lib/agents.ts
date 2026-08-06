@@ -68,7 +68,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
         JSON.stringify(
             {
                 permissions: {
-                    defaultMode: 'acceptEdits',
                     allow: myself
                         ? ['Bash(node ./bin/fix.js)', 'Bash(node ./bin/build.js)']
                         : [
