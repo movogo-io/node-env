@@ -1,6 +1,6 @@
 {
   "name": "@riddance/env",
-  "version": "0.10.2-rc1",
+  "version": "0.10.2",
   "type": "module",
   "keywords": [
     "riddance",

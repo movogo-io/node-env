@@ -124,7 +124,7 @@ export async function setup(targetDir: string, firstInstall: boolean, myself: bo
     await Promise.all(dirs.map(dir => mkdir(join(targetDir, dir), { recursive: true })))
     const dependencies = dependantPackages(targetDir)
     await Promise.all([
-        ...(myself ? [] : [copyFromTemplate(targetDir)]),
+        ...(myself ? [] : [copyFromTemplate(targetDir), allowScript(targetDir, dependencies)]),
         setupSpelling(targetDir),
         writeTestConfig(targetDir, dependencies),
         syncGitUser(targetDir),
@@ -153,6 +153,34 @@ async function copyFromTemplate(targetDir: string) {
         }
         await copyFile(join('template', file), join(targetDir, file))
     }
+}
+
+async function allowScript(
+    path: string,
+    dependenciesPromise: Promise<{ allowScripts?: { [p: string]: boolean } }>,
+) {
+    const { allowScripts } = await dependenciesPromise
+    if (allowScripts?.['@riddance/env']) {
+        return
+    }
+    const fileName = join(path, 'package.json')
+    const packageJson = JSON.parse(await readFile(fileName, 'utf-8')) as {
+        allowScripts?: { [p: string]: boolean }
+    }
+    await writeFile(
+        fileName,
+        JSON.stringify(
+            {
+                ...packageJson,
+                allowScripts: {
+                    '@riddance/env': true,
+                    ...allowScripts,
+                },
+            },
+            undefined,
+            '  ',
+        ) + '\n',
+    )
 }
 
 async function syncGitUser(path: string) {
