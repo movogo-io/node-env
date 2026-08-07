@@ -53,6 +53,8 @@ export class Changes {
             ])
         }
         await writeTSConfig(path, dependencies)
+        // eslint-disable-next-line no-void
+        void updateNotice(reporter, dependencies)
         return (
             (await checkNodeVersion(reporter, path, 'package.json')) &&
             (await checkNodeVersion(reporter, path, 'example/package.json'))
@@ -202,6 +204,33 @@ export class Changes {
             join(this.#path, '.timestamps.json'),
             JSON.stringify(this.#timestamps, undefined, '  '),
         )
+    }
+}
+
+async function updateNotice(
+    reporter: Reporter,
+    dependenciesPromise: Promise<{
+        dependencies: { [k: string]: { readonly version: string } }
+        devDependencies: { [k: string]: { readonly version: string } }
+    }>,
+) {
+    const { dependencies, devDependencies } = await dependenciesPromise
+    for (const [p, { version }] of Object.entries({ ...dependencies, ...devDependencies })) {
+        if (URL.canParse(version) || version.startsWith('git+ssh://')) {
+            continue
+        }
+        try {
+            const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(p)}/latest`)
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`)
+            }
+            const latest = (await res.json()) as { version: string }
+            if (latest.version !== version) {
+                reporter.error(`Please update ${p} from ${version} to ${latest.version}`)
+            }
+        } catch {
+            reporter.error(`Cannot find latest version of ${p}`)
+        }
     }
 }
 
