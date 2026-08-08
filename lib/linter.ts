@@ -64,20 +64,27 @@ function ignore(msg: ESLint.LintResult['messages'][0]) {
 }
 
 export async function fixLints(path: string, globPattern: string) {
-    const cache = new ESLint({ cwd: path, fix: true })
-    const results = await cache.lintFiles(globPattern)
-    const fixables = results.filter(r => r.output)
-    if (fixables.length === 0) {
-        return []
+    try {
+        const cache = new ESLint({ cwd: path, fix: true })
+        const results = await cache.lintFiles(globPattern)
+        const fixables = results.filter(r => r.output)
+        if (fixables.length === 0) {
+            return []
+        }
+        await ESLint.outputFixes(results)
+        const [changed, mapping] = await kebabCaseFiles(
+            path,
+            results.map(r => relative(path, r.filePath)),
+        )
+        return [...changed, ...fixables.map(r => relative(path, r.filePath))].map(f =>
+            mapping.reduce((pv, [, camel, kebab]) => pv.replace(camel, () => kebab), f),
+        )
+    } catch (e) {
+        if ((e as { messageTemplate?: string }).messageTemplate === 'all-matched-files-ignored') {
+            return []
+        }
+        throw e
     }
-    await ESLint.outputFixes(results)
-    const [changed, mapping] = await kebabCaseFiles(
-        path,
-        results.map(r => relative(path, r.filePath)),
-    )
-    return [...changed, ...fixables.map(r => relative(path, r.filePath))].map(f =>
-        mapping.reduce((pv, [, camel, kebab]) => pv.replace(camel, () => kebab), f),
-    )
 }
 
 async function kebabCaseFiles(path: string, files: string[]) {
