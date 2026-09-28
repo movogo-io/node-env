@@ -45,7 +45,6 @@ export function compile(reporter: Reporter, path: string) {
         listEmittedFiles: true,
         outDir: path,
         rootDir: path,
-        typeRoots: [resolve(path, 'node_modules/@types')],
     })
     const sourceFiles = program.getSourceFiles().map(sf => relative(path, sf.fileName))
 

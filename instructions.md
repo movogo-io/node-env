@@ -107,8 +107,8 @@ function entry() {
 ## Commands
 
 - `mkdir -p test` - create the test directory
-- `./node_modules/.bin/riddance-fix` - automatically fixes formatting and linting errors. **ALWAYS** Run this before checking the code. It will output any changed files.
-- `./node_modules/.bin/riddance-build` - check the code for issues such as spelling, linting, types, formatting
+- `npx riddance-fix` - automatically fixes formatting and linting errors. **ALWAYS** Run this before checking the code. It will output any changed files.
+- `npx riddance-build` - check the code for issues such as spelling, linting, types, formatting
 
 **DO NOT** improvise the use of tools you know already like `npx tsc` or `npx mocha`. **ONLY USE** build tools listed in this document.
 

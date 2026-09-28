@@ -4,6 +4,7 @@ import { setup } from '../lib/env.js'
 import { formatFiles } from '../lib/formatter.js'
 import { isCodeClean } from '../lib/git.js'
 import { fixLints } from '../lib/linter.js'
+import { workspaceMembers } from '../lib/workspace.js'
 
 const targetDir = process.argv[2] ?? process.env.INIT_CWD
 
@@ -11,21 +12,30 @@ if (!targetDir) {
     throw new Error('Please specify target directory.')
 }
 
-const { isAlreadyInstalled, myself } = await state(targetDir)
-const existing = await setup(targetDir, !isAlreadyInstalled, myself)
-if (existing.length !== 0) {
-    console.error('Riddance will take ownership of and overwrite the following files:')
-    console.error(existing.map(f => `  ./${f}`).join('\n'))
-    console.error('Please remove (and stage the removal) before proceeding.')
-    process.exit(1)
+// npm runs this postinstall once, in the directory `npm install` ran in. A
+// workspace root is not a project: its members are.
+const members = await workspaceMembers(targetDir)
+for (const dir of members.length === 0 ? [targetDir] : members) {
+    await install(dir)
 }
 
-if (isAlreadyInstalled) {
-    if (await isCodeClean(targetDir)) {
-        const fixed = await fixLints(targetDir, '**/*.ts')
-        if (fixed.length !== 0) {
-            await formatFiles(targetDir, fixed)
-            console.error('Fixes applied, please review carefully.')
+async function install(dir: string) {
+    const { isAlreadyInstalled, myself } = await state(dir)
+    const existing = await setup(dir, !isAlreadyInstalled, myself)
+    if (existing.length !== 0) {
+        console.error('Riddance will take ownership of and overwrite the following files:')
+        console.error(existing.map(f => `  ./${f}`).join('\n'))
+        console.error('Please remove (and stage the removal) before proceeding.')
+        process.exit(1)
+    }
+
+    if (isAlreadyInstalled) {
+        if (await isCodeClean(dir)) {
+            const fixed = await fixLints(dir, '**/*.ts')
+            if (fixed.length !== 0) {
+                await formatFiles(dir, fixed)
+                console.error('Fixes applied, please review carefully.')
+            }
         }
     }
 }

@@ -1,11 +1,13 @@
 import { exec } from 'node:child_process'
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
+import { installRoot } from './workspace.js'
 import { Reporter } from './reporter.js'
 
 export async function install(reporter: Reporter, path: string) {
     reporter.status('Updating packages...')
-    const success = (await npmInstall(path)) && (await npmInstall(join(path, 'example')))
+    const success =
+        (await npmInstall(await installRoot(path))) && (await npmInstall(join(path, 'example')))
     if (success) {
         reporter.status('Packages updated.')
     } else {

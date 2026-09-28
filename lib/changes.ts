@@ -10,6 +10,7 @@ import { setupAgents } from './agents.js'
 import { writeTSConfig } from './compiler.js'
 import { dependantPackages } from './dependencies.js'
 import { uninstall } from './env.js'
+import { installRoot, isInside } from './workspace.js'
 import { Reporter } from './reporter.js'
 
 export function getSource(input: string[]) {
@@ -69,7 +70,7 @@ export class Changes {
         abort: AbortSignal,
     ) {
         const testData = inputFiles.filter(isTestData)
-        const source = getSource(inputFiles)
+        const source = getSource(inputFiles).filter(f => isInside(path, f))
         const result = (
             await Promise.all([
                 compileResult,
@@ -100,12 +101,13 @@ export class Changes {
             return true
         }
         const oldestStage = Math.min(...stages.map(d => new Date(d).getTime()))
+        const lockfile = join(await installRoot(this.#path), 'package-lock.json')
         const latestPackage = Math.max(
             ...(
                 await Promise.all(
                     [
                         'package.json',
-                        'package-lock.json',
+                        lockfile,
                         'example/package.json',
                         'example/package-lock.json',
                     ].map(async f => {
@@ -221,6 +223,10 @@ async function updateNotice(
         }
         try {
             const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(p)}/latest`)
+            if (res.status === 404) {
+                // Published elsewhere, e.g. a scope on GitHub Packages.
+                continue
+            }
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`)
             }

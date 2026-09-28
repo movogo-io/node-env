@@ -73,8 +73,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
                         : [
                               'Bash(npm init)',
                               'Bash(mkdir -p test)',
-                              'Bash(./node_modules/.bin/riddance-fix)',
-                              'Bash(./node_modules/.bin/riddance-build)',
+                              'Bash(npx riddance-fix)',
+                              'Bash(npx riddance-build)',
                           ],
                 },
             },

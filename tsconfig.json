@@ -18,6 +18,7 @@
     ],
     "module": "node20",
     "moduleResolution": "node16",
+    "preserveSymlinks": true,
     "resolveJsonModule": true,
     "strictNullChecks": true,
     "skipLibCheck": true,
