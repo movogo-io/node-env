@@ -1,6 +1,13 @@
 {
-  "name": "@riddance/env",
-  "version": "0.10.2",
+  "name": "@movogo-io/env",
+  "version": "0.11.0",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/movogo-io/node-env.git"
+  },
   "type": "module",
   "keywords": [
     "riddance",

@@ -10,7 +10,7 @@ import { setupAgents } from './agents.js'
 import { writeTSConfig } from './compiler.js'
 import { dependantPackages } from './dependencies.js'
 import { uninstall } from './env.js'
-import { installRoot, isInside } from './workspace.js'
+import { installRoot, isEnv, isInside } from './workspace.js'
 import { Reporter } from './reporter.js'
 
 export function getSource(input: string[]) {
@@ -272,7 +272,7 @@ async function loadMyVersion(path: string, reporter?: Reporter) {
             dependencies?: { [p: string]: string }
             devDependencies?: { [p: string]: string }
         }
-        if (name === '@riddance/env') {
+        if (isEnv(name)) {
             return version
         }
         const myVersion = devDependencies['@riddance/env']

@@ -4,7 +4,7 @@ import { setup } from '../lib/env.js'
 import { formatFiles } from '../lib/formatter.js'
 import { isCodeClean } from '../lib/git.js'
 import { fixLints } from '../lib/linter.js'
-import { workspaceMembers } from '../lib/workspace.js'
+import { isEnv, workspaceMembers } from '../lib/workspace.js'
 
 const targetDir = process.argv[2] ?? process.env.INIT_CWD
 
@@ -51,7 +51,7 @@ async function state(path: string) {
 
         return {
             isAlreadyInstalled: !!packageLockJson.packages?.['node_modules/@riddance/env'],
-            myself: packageLockJson.name === '@riddance/env',
+            myself: isEnv(packageLockJson.name),
         }
     } catch {
         try {
@@ -62,7 +62,7 @@ async function state(path: string) {
 
             return {
                 isAlreadyInstalled: !!packageJson.devDependencies?.['@riddance/env'],
-                myself: packageJson.name === '@riddance/env',
+                myself: isEnv(packageJson.name),
             }
         } catch {
             return { isAlreadyInstalled: false, myself: false }

@@ -2,6 +2,14 @@ import { glob, readFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { isFileNotFound } from './fs.js'
 
+const { name: ownName } = JSON.parse(
+    await readFile(new URL('../package.json', import.meta.url), 'utf-8'),
+) as { name: string }
+
+export function isEnv(name: string | undefined) {
+    return name === '@riddance/env' || name === ownName
+}
+
 // The package directories a workspace root declares; none for a directory
 // that is not one, or has no readable package.json.
 export async function workspaceMembers(root: string) {
