@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setupAgents } from '../lib/agents.js'
-import { checkManifest, readManifest } from '../lib/instructions.js'
+import { checkManifest, checkPackageInstructions, readManifest } from '../lib/instructions.js'
 
 describe('agents', () => {
     let dir = ''
@@ -36,6 +36,20 @@ describe('agents', () => {
             "Topic 'Broad': path '**/*.ts' must start with a literal directory or file name.",
             "Topic 'gone': ./ai/gone.md is missing or empty.",
         ])
+    })
+
+    it('should skip a reference to a package that is not installed', async () => {
+        await write(dir, 'ai/core.md', 'See @x/absent#topic and @x/self#missing.\n')
+        await write(
+            dir,
+            'package.json',
+            JSON.stringify({ name: '@x/self', ai: { core: './ai/core.md', topics: [] } }),
+        )
+
+        assert.deepStrictEqual(await checkPackageInstructions(dir), {
+            errors: ['Reference @x/self#missing names no topic of this package.'],
+            warnings: [],
+        })
     })
 
     it('should inline a small legacy guide as the core', async () => {

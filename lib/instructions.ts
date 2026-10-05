@@ -216,7 +216,7 @@ export async function checkReferences(manifest: Manifest, fromPath: string) {
         .filter(r => r.packageName !== manifest.packageName)
     const problems: string[] = []
     for (const r of others) {
-        const packageJsonPath = findPackageJSON(r.packageName, baseUrl)
+        const packageJsonPath = installedPackageJson(r.packageName, baseUrl)
         if (!packageJsonPath) {
             continue
         }
@@ -230,6 +230,17 @@ export async function checkReferences(manifest: Manifest, fromPath: string) {
         }
     }
     return problems
+}
+
+function installedPackageJson(packageName: string, baseUrl: string) {
+    try {
+        return findPackageJSON(packageName, baseUrl)
+    } catch (e) {
+        if ((e as { code?: unknown }).code === 'ERR_MODULE_NOT_FOUND') {
+            return undefined
+        }
+        throw e
+    }
 }
 
 export const referencePattern = /`?(@[a-z0-9-]+\/[a-z0-9-]+)#([a-z][a-z0-9-]*)`?/gu
