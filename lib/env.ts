@@ -23,6 +23,7 @@ import type { Reporter } from './reporter.js'
 import { vote } from './siblings.js'
 import { setupSpelling } from './spelling.js'
 import { writeTestConfig } from './tester.js'
+import { ownName } from './workspace.js'
 
 const dirs = ['.vscode', '.zed', '.devcontainer', '.idea/codeStyles/', '.idea/inspectionProfiles/']
 const files = [
@@ -94,7 +95,7 @@ async function createTemplate() {
                 l
                     .replace(
                         /import \{ [^}]+ \} from '\.\/lib\/eslint-config.js'/u,
-                        `import { configuration } from '@riddance/env/lib/eslint-config.js'`,
+                        () => `import { configuration } from '${ownName}/lib/eslint-config.js'`,
                     )
                     .trim(),
             )
@@ -160,7 +161,7 @@ async function allowScript(
     dependenciesPromise: Promise<{ allowScripts?: { [p: string]: boolean } }>,
 ) {
     const { allowScripts } = await dependenciesPromise
-    if (allowScripts?.['@riddance/env']) {
+    if (allowScripts && Object.hasOwn(allowScripts, ownName)) {
         return
     }
     const fileName = join(path, 'package.json')
@@ -173,7 +174,7 @@ async function allowScript(
             {
                 ...packageJson,
                 allowScripts: {
-                    '@riddance/env': true,
+                    [ownName]: true,
                     ...allowScripts,
                 },
             },
@@ -213,9 +214,7 @@ export async function uninstall(reporter: Reporter, targetDir: string) {
     reporter.status('Uninstalling...')
     const packageJson = JSON.parse(await readFile(join(targetDir, 'package.json'), 'utf-8')) as {
         scripts?: { [s: string]: string }
-        devDependencies?: {
-            '@riddance/env'?: string
-        }
+        devDependencies?: { [p: string]: string }
     }
 
     await ensureUnlinked(targetDir, '.timestamps.json')
@@ -242,8 +241,8 @@ node_modules/
             modified = true
         }
     }
-    if (packageJson.devDependencies?.['@riddance/env']) {
-        delete packageJson.devDependencies['@riddance/env']
+    if (packageJson.devDependencies && Object.hasOwn(packageJson.devDependencies, ownName)) {
+        delete packageJson.devDependencies[ownName]
         modified = true
         if (Object.keys(packageJson.devDependencies).length === 0) {
             delete packageJson.devDependencies

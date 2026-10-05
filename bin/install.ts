@@ -4,7 +4,7 @@ import { setup } from '../lib/env.js'
 import { formatFiles } from '../lib/formatter.js'
 import { isCodeClean } from '../lib/git.js'
 import { fixLints } from '../lib/linter.js'
-import { isEnv, workspaceMembers } from '../lib/workspace.js'
+import { isEnv, ownName, workspaceMembers } from '../lib/workspace.js'
 
 const targetDir = process.argv[2] ?? process.env.INIT_CWD
 
@@ -46,22 +46,25 @@ async function state(path: string) {
             await readFile(join(path, 'package-lock.json'), 'utf-8'),
         ) as {
             name?: string
-            packages?: { 'node_modules/@riddance/env'?: unknown }
+            packages?: { [p: string]: unknown }
         }
 
         return {
-            isAlreadyInstalled: !!packageLockJson.packages?.['node_modules/@riddance/env'],
+            isAlreadyInstalled: Object.hasOwn(
+                packageLockJson.packages ?? {},
+                `node_modules/${ownName}`,
+            ),
             myself: isEnv(packageLockJson.name),
         }
     } catch {
         try {
             const packageJson = JSON.parse(await readFile(join(path, 'package.json'), 'utf-8')) as {
                 name?: string
-                devDependencies?: { '@riddance/env'?: string }
+                devDependencies?: { [p: string]: string }
             }
 
             return {
-                isAlreadyInstalled: !!packageJson.devDependencies?.['@riddance/env'],
+                isAlreadyInstalled: Object.hasOwn(packageJson.devDependencies ?? {}, ownName),
                 myself: isEnv(packageJson.name),
             }
         } catch {

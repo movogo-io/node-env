@@ -10,7 +10,7 @@ import { setupAgents } from './agents.js'
 import { writeTSConfig } from './compiler.js'
 import { dependantPackages } from './dependencies.js'
 import { uninstall } from './env.js'
-import { installRoot, isEnv, isInside } from './workspace.js'
+import { installRoot, isEnv, isInside, ownName } from './workspace.js'
 import { Reporter } from './reporter.js'
 
 export function getSource(input: string[]) {
@@ -48,10 +48,11 @@ export class Changes {
             if (!(await this.#restartIfUpdated(reporter))) {
                 return undefined
             }
-            await Promise.all([
+            const [agents] = await Promise.all([
                 setupAgents(path, dependencies),
                 writeTestConfig(path, dependencies),
             ])
+            reportAgents(reporter, agents)
         }
         await writeTSConfig(path, dependencies)
         // eslint-disable-next-line no-void
@@ -209,6 +210,18 @@ export class Changes {
     }
 }
 
+function reportAgents(
+    reporter: Reporter,
+    { summary, warnings }: { summary: string[]; warnings: string[] },
+) {
+    if (warnings.length === 0) {
+        return
+    }
+    for (const line of [...summary, ...warnings.map(w => `warning: ${w}`)]) {
+        reporter.status(line)
+    }
+}
+
 async function updateNotice(
     reporter: Reporter,
     dependenciesPromise: Promise<{
@@ -275,11 +288,11 @@ async function loadMyVersion(path: string, reporter?: Reporter) {
         if (isEnv(name)) {
             return version
         }
-        const myVersion = devDependencies['@riddance/env']
+        const myVersion = devDependencies[ownName]
         if (!myVersion) {
-            if (dependencies['@riddance/env']) {
+            if (Object.hasOwn(dependencies, ownName)) {
                 reporter?.error(
-                    '@riddance/env should be added to package.json as a devDependency, not a dependency.',
+                    `${ownName} should be added to package.json as a devDependency, not a dependency.`,
                 )
             }
             return
@@ -319,7 +332,7 @@ async function checkNodeVersion(
         const myNodeVersion = '24'
         if (!engineCompatible(engines.node, myNodeVersion)) {
             reporter?.error(
-                `Your version of @riddance/env expects to be running on node version ${myNodeVersion}. Consider adding "node": ">=${myNodeVersion} to the engines property.`,
+                `Your version of ${ownName} expects to be running on node version ${myNodeVersion}. Consider adding "node": ">=${myNodeVersion} to the engines property.`,
             )
             return false
         }

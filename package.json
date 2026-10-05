@@ -1,6 +1,6 @@
 {
   "name": "@movogo-io/env",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
@@ -55,7 +55,7 @@
     "**/lib/*.js",
     "/template/**",
     "/bin/install.js",
-    "instructions.md"
+    "ai/"
   ],
   "bin": {
     "riddance-watch": "./bin/watch.js",
@@ -66,6 +66,26 @@
     "riddance-uninstall": "./bin/uninstall.js"
   },
   "ai": {
-    "instructions": "./instructions.md"
+    "core": "./ai/core.md",
+    "topics": [
+      {
+        "name": "style",
+        "file": "./ai/style.md",
+        "when": "Read before writing or restructuring TypeScript in this project: file organization, function design, control flow, dependencies, classes, naming, and TypeScript style (no `as`, inline types)."
+      },
+      {
+        "name": "tests",
+        "file": "./ai/tests.md",
+        "when": "Writing or changing a test file: assertion style, test order, timeouts, no test helpers, spelling exceptions.",
+        "paths": [
+          "test/**"
+        ]
+      },
+      {
+        "name": "commits",
+        "file": "./ai/commits.md",
+        "when": "Read before writing a commit message or amending a commit: format, prompts section, Co-Authored-By line, never push."
+      }
+    ]
   }
 }

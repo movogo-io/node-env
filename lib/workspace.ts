@@ -2,7 +2,7 @@ import { glob, readFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { isFileNotFound } from './fs.js'
 
-const { name: ownName } = JSON.parse(
+export const { name: ownName } = JSON.parse(
     await readFile(new URL('../package.json', import.meta.url), 'utf-8'),
 ) as { name: string }
 

@@ -1,3 +1,4 @@
+import { ownName } from './workspace.js'
 import { spawn, SpawnOptions } from 'node:child_process'
 import { access, constants, writeFile } from 'node:fs/promises'
 import { findPackageJSON } from 'node:module'
@@ -151,7 +152,7 @@ async function sourceMapSupport() {
         await access('./lib/source-map-support.ts', constants.R_OK)
         return './lib/source-map-support.js'
     } catch {
-        return '@riddance/env/lib/source-map-support.js'
+        return `${ownName}/lib/source-map-support.js`
     }
 }
 

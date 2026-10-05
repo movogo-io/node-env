@@ -3,6 +3,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { getHash, getTag, getTags, isClean } from '../lib/git.js'
+import { checkPackageInstructions } from '../lib/instructions.js'
 
 const p = resolve(process.cwd(), process.argv[2] ?? '.')
 const packageJson = JSON.parse(await readFile(join(p, 'package.json'), 'utf-8')) as {
@@ -36,8 +37,18 @@ async function assertUntagged() {
     }
 }
 
+async function assertInstructions() {
+    const { errors, warnings } = await checkPackageInstructions(p)
+    for (const warning of warnings) {
+        console.warn(`warning: ${warning}`)
+    }
+    if (errors.length !== 0) {
+        throw new Error(['Agent instructions do not fit:', ...errors.map(e => `  ${e}`)].join('\n'))
+    }
+}
+
 try {
-    await Promise.all([assertClean(), assertUntagged()])
+    await Promise.all([assertClean(), assertUntagged(), assertInstructions()])
     const gitHead = await getHash(p)
     await writeFile(
         join(p, 'package.json'),
