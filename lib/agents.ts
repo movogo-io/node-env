@@ -59,7 +59,9 @@ export async function setupAgents(
         readManifests(path, packageJson, dependencies),
     ])
     const infra = packageJson.private !== true
-    const guides = manifests.flatMap(m => guidesOf(m, infra, m.packageName === packageJson.name))
+    const { guides, collisions } = distinctGuides(
+        manifests.flatMap(m => guidesOf(m, infra, m.packageName === packageJson.name)),
+    )
     const claude = claudeDocument(readme, manifests, guides, myself)
     const agents = agentsDocument(readme, manifests, guides, myself)
     const [skillWarnings, ruleWarnings, retiredWarnings, codexWarnings] = await Promise.all([
@@ -83,6 +85,7 @@ export async function setupAgents(
         summary: budgetSummary(manifests, guides, claude, agents),
         warnings: [
             ...manifests.flatMap(checkManifest),
+            ...collisions,
             ...budgetWarnings(claude, agents),
             ...skillWarnings,
             ...ruleWarnings,
@@ -122,6 +125,26 @@ function guidesOf(manifest: Manifest, infra: boolean, own: boolean): Guide[] {
                 ? join(topic.file)
                 : join('node_modules', manifest.packageName, topic.file),
         }))
+}
+
+function distinctGuides(all: Guide[]) {
+    const guides: Guide[] = []
+    const collisions: string[] = []
+    for (const guide of all) {
+        const first = guides.find(g => g.name === guide.name)
+        if (first) {
+            collisions.push(
+                `${topicReference(guide)} is not generated; ${topicReference(first)} already generates ${guide.name}.`,
+            )
+            continue
+        }
+        guides.push(guide)
+    }
+    return { guides, collisions }
+}
+
+function topicReference({ manifest, topic }: Guide) {
+    return topic.name === '' ? manifest.packageName : `${manifest.packageName}#${topic.name}`
 }
 
 export function guideName(packageName: string, topic: string) {

@@ -66,6 +66,43 @@ describe('agents', () => {
         })
     })
 
+    it('should generate one skill when two topics map to the same name', async () => {
+        await write(dir, 'package.json', JSON.stringify({ name: 'consumer', private: true }))
+        await write(dir, 'node_modules/@a/b/t.md', 'First.\n')
+        await write(dir, 'node_modules/@a/b-c/t.md', 'Second.\n')
+
+        const { warnings } = await setupAgents(
+            dir,
+            Promise.resolve({
+                dependencies: {
+                    '@a/b': {
+                        path: join(dir, 'node_modules/@a/b'),
+                        packageJson: {
+                            name: '@a/b',
+                            ai: { topics: [{ name: 'c-d', file: 't.md', when: 'First.' }] },
+                        },
+                    },
+                    '@a/b-c': {
+                        path: join(dir, 'node_modules/@a/b-c'),
+                        packageJson: {
+                            name: '@a/b-c',
+                            ai: { topics: [{ name: 'd', file: 't.md', when: 'Second.' }] },
+                        },
+                    },
+                },
+                devDependencies: {},
+            }),
+        )
+
+        assert.deepStrictEqual(warnings, [
+            '@a/b-c#d is not generated; @a/b#c-d already generates a-b-c-d.',
+        ])
+        assert.deepStrictEqual(
+            (await readFile(join(dir, 'CLAUDE.md'), 'utf-8')).split('|---|---|', 2)[1],
+            '\n| `a-b-c-d` skill | First. |\n',
+        )
+    })
+
     it('should generate cores, skills, rules and the index', async () => {
         const dependencies = await fixture(dir)
 
