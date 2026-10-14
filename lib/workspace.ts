@@ -6,6 +6,8 @@ export const { name: ownName } = JSON.parse(
     await readFile(new URL('../package.json', import.meta.url), 'utf-8'),
 ) as { name: string }
 
+export const envNames = [ownName, '@riddance/env']
+
 export function isEnv(name: string | undefined) {
     return name === '@riddance/env' || name === ownName
 }

@@ -4,7 +4,7 @@ import { setup } from '../lib/env.js'
 import { formatFiles } from '../lib/formatter.js'
 import { isCodeClean } from '../lib/git.js'
 import { fixLints } from '../lib/linter.js'
-import { isEnv, ownName, workspaceMembers } from '../lib/workspace.js'
+import { envNames, isEnv, workspaceMembers } from '../lib/workspace.js'
 
 const targetDir = process.argv[2] ?? process.env.INIT_CWD
 
@@ -50,9 +50,8 @@ async function state(path: string) {
         }
 
         return {
-            isAlreadyInstalled: Object.hasOwn(
-                packageLockJson.packages ?? {},
-                `node_modules/${ownName}`,
+            isAlreadyInstalled: envNames.some(n =>
+                Object.hasOwn(packageLockJson.packages ?? {}, `node_modules/${n}`),
             ),
             myself: isEnv(packageLockJson.name),
         }
@@ -64,7 +63,9 @@ async function state(path: string) {
             }
 
             return {
-                isAlreadyInstalled: Object.hasOwn(packageJson.devDependencies ?? {}, ownName),
+                isAlreadyInstalled: envNames.some(n =>
+                    Object.hasOwn(packageJson.devDependencies ?? {}, n),
+                ),
                 myself: isEnv(packageJson.name),
             }
         } catch {
