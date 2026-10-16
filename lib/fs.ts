@@ -14,3 +14,7 @@ export async function ensureUnlinked(file: string) {
 export function isFileNotFound(e: unknown) {
     return (e as { code: unknown }).code === 'ENOENT'
 }
+
+export function isNotADirectory(e: unknown) {
+    return (e as { code: unknown }).code === 'ENOTDIR'
+}

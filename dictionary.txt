@@ -7,3 +7,6 @@ hashbang
 mocharc
 movogo
 postversion
+gitdir
+worktree
+worktrees

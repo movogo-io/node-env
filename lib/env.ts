@@ -17,7 +17,7 @@ import { join } from 'node:path'
 import { managedFiles as managedAgentFiles, setupAgents } from './agents.js'
 import { writeTSConfig } from './compiler.js'
 import { dependantPackages } from './dependencies.js'
-import { isFileNotFound } from './fs.js'
+import { isFileNotFound, isNotADirectory } from './fs.js'
 import { install } from './npm.js'
 import type { Reporter } from './reporter.js'
 import { vote } from './siblings.js'
@@ -184,7 +184,7 @@ async function allowScript(
     )
 }
 
-async function syncGitUser(path: string) {
+export async function syncGitUser(path: string) {
     try {
         const [ws, core, ...sections] = (await readFile(join(path, '.git/config'), 'utf-8')).split(
             '[',
@@ -203,7 +203,8 @@ async function syncGitUser(path: string) {
         }
         await writeFile(join(path, '.git/config'), [ws, core, user, ...sections].join('['), 'utf-8')
     } catch (e) {
-        if (isFileNotFound(e)) {
+        // A worktree's .git is a file; its user is in the main repository's config.
+        if (isFileNotFound(e) || isNotADirectory(e)) {
             return
         }
         throw e
