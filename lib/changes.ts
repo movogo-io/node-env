@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { glob, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve } from 'node:path'
 import { formatted } from '../lib/formatter.js'
 import { lint, makeCache } from '../lib/linter.js'
@@ -58,6 +58,9 @@ export class Changes {
             reportAgents(reporter, agents)
         }
         await writeTSConfig(path, dependencies)
+        if (!(await componentsBuilt(reporter, path, dependencies))) {
+            return false
+        }
         // eslint-disable-next-line no-void
         void updateNotice(reporter, dependencies)
         return (
@@ -223,6 +226,27 @@ function reportAgents(
     for (const line of [...summary, ...warnings.map(w => `warning: ${w}`)]) {
         reporter.status(line)
     }
+}
+
+// Without the flag the compiler never sees a .tsx file, so its tests would silently not run.
+async function componentsBuilt(
+    reporter: Reporter,
+    path: string,
+    dependencies: Promise<{ jsx: boolean }>,
+) {
+    if ((await dependencies).jsx) {
+        return true
+    }
+    const ignored = await Array.fromAsync(
+        glob('**/*.tsx', {
+            cwd: path,
+            exclude: ['**/node_modules', 'test/data', 'example/test/data'],
+        }),
+    )
+    for (const file of ignored) {
+        reporter.error('Add "riddance": { "jsx": true } to package.json to build .tsx files.', file)
+    }
+    return ignored.length === 0
 }
 
 async function updateNotice(

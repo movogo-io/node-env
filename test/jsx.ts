@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import {
+    cp,
+    mkdir,
+    mkdtemp,
+    readdir,
+    readFile,
+    realpath,
+    rm,
+    symlink,
+    writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -75,6 +85,26 @@ describe('jsx', () => {
         })
     })
 
+    it('should refuse a component in a package without the flag', async () => {
+        await writeFile(
+            join(dir, 'package.json'),
+            JSON.stringify({ name: 'no-flag', type: 'module', engines: { node: '>=24' } }),
+        )
+        await cp(join(envRoot, 'test/data/jsx/greeting.tsx'), join(dir, 'greeting.tsx'))
+        await writeFile(
+            join(dir, '.timestamps.json'),
+            JSON.stringify({
+                outputs: [],
+                stages: { install: new Date(Date.now() + 60_000).toISOString() },
+            }),
+        )
+
+        await assert.rejects(
+            run('bin/build.js', dir),
+            /greeting\.tsx - Add "riddance": \{ "jsx": true \}/u,
+        )
+    }).timeout(60_000)
+
     it('should build, lint and test a package with a component', async () => {
         await cp(join(envRoot, 'test/data/jsx'), dir, { recursive: true })
         await Promise.all(
@@ -96,25 +126,53 @@ describe('jsx', () => {
             }),
         )
 
-        const stdout = await build(dir)
+        const stdout = await run('bin/build.js', dir)
 
         assert.match(stdout, /1 passing/u)
     }).timeout(60_000)
+
+    it('should rename a component to kebab case when nothing else needs fixing', async () => {
+        const test = await readFile(join(envRoot, 'test/data/jsx/test/greeting.tsx'), 'utf-8')
+        await cp(join(envRoot, 'test/data/jsx/package.json'), join(dir, 'package.json'))
+        await cp(join(envRoot, 'test/data/jsx/greeting.tsx'), join(dir, 'Greeting.tsx'))
+        await mkdir(join(dir, 'test'))
+        await writeFile(
+            join(dir, 'test/greeting.tsx'),
+            test.replace('../greeting.js', '../Greeting.js'),
+        )
+        await Promise.all(
+            ['tsconfig.json', '.prettierrc.json', '.editorconfig'].map(file =>
+                cp(join(envRoot, file), join(dir, file)),
+            ),
+        )
+        await writeTSConfig(
+            dir,
+            Promise.resolve({ dependencies: {}, devDependencies: {}, jsx: true }),
+        )
+        await writeFile(
+            join(dir, 'eslint.config.mjs'),
+            `import { configuration } from '${pathToFileURL(join(envRoot, 'lib/eslint-config.js')).href}'\n\nexport default configuration(import.meta.dirname)\n`,
+        )
+        await symlink(join(envRoot, 'node_modules'), join(dir, 'node_modules'))
+
+        await run('bin/fix.js', dir)
+
+        assert.deepStrictEqual(
+            (await readdir(dir)).filter(file => file.endsWith('.tsx')),
+            ['greeting.tsx'],
+        )
+        assert.strictEqual(await readFile(join(dir, 'test/greeting.tsx'), 'utf-8'), test)
+    }).timeout(60_000)
 })
 
-function build(cwd: string) {
+function run(bin: string, cwd: string) {
     return new Promise<string>((resolve, reject) => {
-        execFile(
-            process.execPath,
-            [join(envRoot, 'bin/build.js')],
-            { cwd },
-            (error, stdout, stderr) => {
-                if (error) {
-                    reject(new Error(stdout + stderr, { cause: error }))
-                    return
-                }
-                resolve(stdout)
-            },
-        )
+        execFile(process.execPath, [join(envRoot, bin)], { cwd }, (error, stdout, stderr) => {
+            if (error) {
+                reject(new Error(stdout + stderr, { cause: error }))
+                return
+            }
+            resolve(stdout)
+        })
     })
 }

@@ -9,11 +9,12 @@ import { fixLints } from '../lib/linter.js'
 
 const path = resolve(process.cwd(), process.argv[2] ?? '.')
 const pattern = (await dependantPackages(path)).jsx ? '**/*.{ts,tsx}' : '**/*.ts'
+
+// Fixing lints renames files, so the files to format are listed after it.
+await fixLints(path, pattern)
 const glob = new Glob(pattern, { cwd: path, ignore: ['node_modules/**', '**/*.d.ts'] })
 const files = await glob.walk()
 const sourceFiles = getSource(files.map(f => resolve(path, f)))
-
-await fixLints(path, pattern)
 const fixed = await formatFiles(
     path,
     sourceFiles.map(f => f.replace(path + '/', '')),
