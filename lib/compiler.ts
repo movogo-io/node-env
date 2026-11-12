@@ -11,9 +11,10 @@ export async function writeTSConfig(
     packageDependencies: Promise<{
         dependencies: { [dependency: string]: unknown }
         devDependencies: { [dependency: string]: unknown }
+        jsx: boolean
     }>,
 ) {
-    const { dependencies, devDependencies } = await packageDependencies
+    const { dependencies, devDependencies, jsx } = await packageDependencies
     const types = [
         ...new Set([
             'node',
@@ -23,8 +24,8 @@ export async function writeTSConfig(
                 .map(d => d.slice('@types/'.length)),
         ]),
     ]
-    await patchTypes(resolve(path, 'tsconfig.json'), types)
-    await patchTypes(resolve(path, 'example', 'tsconfig.json'), types)
+    await patchConfig(resolve(path, 'tsconfig.json'), types, jsx)
+    await patchConfig(resolve(path, 'example', 'tsconfig.json'), types, undefined)
 }
 
 export function compile(reporter: Reporter, path: string) {
@@ -76,21 +77,53 @@ export function reportDiagnostic(reporter: Reporter) {
     }
 }
 
-async function patchTypes(tsconfigPath: string, types: string[]) {
+// `jsx` undefined leaves JSX settings alone: example/tsconfig.json is the author's own.
+async function patchConfig(tsconfigPath: string, types: string[], jsx: boolean | undefined) {
     try {
         const tsconfig = JSON.parse(await readFile(tsconfigPath, 'utf-8')) as {
-            compilerOptions?: { types?: string[] }
+            compilerOptions?: { types?: string[]; jsx?: string; lib?: string[] }
+            include?: string[]
+            exclude?: string[]
         }
-        if (isDeepStrictEqual(tsconfig.compilerOptions?.types, types)) {
+        const patched = structuredClone(tsconfig)
+        const compilerOptions = (patched.compilerOptions ??= {})
+        compilerOptions.types = types
+        // An absent lib or include is TypeScript's default, which already holds DOM and .tsx.
+        if (jsx === true) {
+            compilerOptions.jsx = 'react-jsx'
+            compilerOptions.lib &&= withEntries(compilerOptions.lib, ['DOM'])
+            patched.include &&= withEntries(patched.include, ['**/*.tsx'])
+            patched.exclude &&= withEntries(patched.exclude, tsxTestData)
+        } else if (jsx === false) {
+            if (compilerOptions.jsx === 'react-jsx') {
+                delete compilerOptions.jsx
+            }
+            compilerOptions.lib &&= withoutEntries(compilerOptions.lib, ['DOM'])
+            patched.include &&= withoutEntries(patched.include, ['**/*.tsx'])
+            patched.exclude &&= withoutEntries(patched.exclude, tsxTestData)
+        }
+        if (isDeepStrictEqual(patched, tsconfig)) {
             return
         }
-        const compilerOptions = (tsconfig.compilerOptions ??= {})
-        compilerOptions.types = types
-        await writeFile(tsconfigPath, JSON.stringify(tsconfig, undefined, '  '), 'utf-8')
+        await writeFile(tsconfigPath, JSON.stringify(patched, undefined, '  '), 'utf-8')
     } catch (e) {
         if (isFileNotFound(e)) {
             return
         }
         throw e
     }
+}
+
+const tsxTestData = ['test/data/**/*.tsx', 'example/test/data/**/*.tsx']
+
+function withEntries(list: string[], entries: string[]) {
+    return [...list, ...entries.filter(e => list.every(l => !sameEntry(l, e)))]
+}
+
+function withoutEntries(list: string[], entries: string[]) {
+    return list.filter(l => entries.every(e => !sameEntry(l, e)))
+}
+
+function sameEntry(a: string, b: string) {
+    return a.toLowerCase() === b.toLowerCase()
 }

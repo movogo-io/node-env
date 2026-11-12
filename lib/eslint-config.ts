@@ -440,7 +440,7 @@ export function configuration(dir: string) {
             },
         },
         {
-            files: ['test/**/*.ts', 'example/test/**/*.ts'],
+            files: ['test/**/*.{ts,tsx}', 'example/test/**/*.{ts,tsx}'],
             languageOptions: {
                 globals: globals.mocha,
             },
@@ -458,7 +458,7 @@ export function configuration(dir: string) {
             },
         },
         {
-            files: ['bin/**/*.ts'],
+            files: ['bin/**/*.{ts,tsx}'],
             rules: {
                 'no-console': 'off',
                 'no-process-exit': 'off',

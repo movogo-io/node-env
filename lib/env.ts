@@ -300,7 +300,7 @@ async function dos2unix(file: string) {
     }
 }
 
-const sourceExtensions = ['.ts', '.json', '.txt', '.md']
+const sourceExtensions = ['.ts', '.tsx', '.json', '.txt', '.md']
 const otherSources = new Set(['LICENSE', 'eslint.config.mjs'])
 
 function isSource(file: Dirent) {

@@ -8,7 +8,7 @@ export async function isClean(path: string) {
 export async function isCodeClean(path: string) {
     try {
         const changes = await execAsync(path, 'git status --short')
-        return changes.every(l => !l.endsWith('.ts'))
+        return changes.every(l => !l.endsWith('.ts') && !l.endsWith('.tsx'))
     } catch {
         return false
     }

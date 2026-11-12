@@ -15,7 +15,10 @@ import { Reporter } from './reporter.js'
 
 export function getSource(input: string[]) {
     return input.filter(
-        f => extname(f) === '.ts' && !f.endsWith('.d.ts') && !dirname(f).includes('node_modules'),
+        f =>
+            (extname(f) === '.ts' || extname(f) === '.tsx') &&
+            !f.endsWith('.d.ts') &&
+            !dirname(f).includes('node_modules'),
     )
 }
 

@@ -14,6 +14,8 @@
       "mocha",
       "eslint",
       "eslint-plugin-prettier",
+      "react",
+      "react-dom",
       "source-map-support"
     ],
     "module": "node20",

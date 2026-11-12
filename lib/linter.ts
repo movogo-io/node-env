@@ -88,16 +88,15 @@ export async function fixLints(path: string, globPattern: string) {
 }
 
 async function kebabCaseFiles(path: string, files: string[]) {
-    const ext = '.ts'
-    const sourceFiles = files.filter(f => extname(f) === ext)
+    const sourceFiles = files.filter(f => extname(f) === '.ts' || extname(f) === '.tsx')
     const renamed = sourceFiles
-        .map(f => [dirname(f), basename(f, ext)] as const)
-        .map(([dir, base]) => {
+        .map(f => [dirname(f), basename(f, extname(f)), extname(f)] as const)
+        .map(([dir, base, ext]) => {
             const kebab = base.replaceAll(
                 /[A-Z]+(?![a-z])|[A-Z]/gu,
                 ($, ofs) => (ofs ? '-' : '') + $.toLowerCase(),
             )
-            return kebab === base ? undefined : ([dir, base, kebab] as const)
+            return kebab === base ? undefined : ([dir, base, kebab, ext] as const)
         })
         .filter(r => !!r)
     if (renamed.length === 0) {
@@ -105,7 +104,7 @@ async function kebabCaseFiles(path: string, files: string[]) {
     }
     const changed = await Promise.all(sourceFiles.map(f => updateImports(path, f, renamed)))
     await Promise.all([
-        ...renamed.map(([p, camel, kebab]) =>
+        ...renamed.map(([p, camel, kebab, ext]) =>
             rename(join(path, p, camel + ext), join(path, p, kebab + ext)),
         ),
         ...renamed.flatMap(([p, camel]) =>
@@ -118,7 +117,7 @@ async function kebabCaseFiles(path: string, files: string[]) {
 async function updateImports(
     path: string,
     file: string,
-    renamed: (readonly [string, string, string])[],
+    renamed: (readonly [string, string, string, string])[],
 ) {
     const fp = join(path, file)
     const text = await readFile(fp, 'utf-8')

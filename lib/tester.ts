@@ -12,7 +12,9 @@ export function isTest(file: string) {
     const dirName = dirname(file)
     return (
         (dirName === 'test' || dirName === exampleTestDir) &&
-        (file.endsWith('.js') || (file.endsWith('.ts') && !file.endsWith('.d.ts')))
+        (file.endsWith('.js') ||
+            file.endsWith('.tsx') ||
+            (file.endsWith('.ts') && !file.endsWith('.d.ts')))
     )
 }
 
@@ -42,7 +44,9 @@ export async function test(
     const runOnlyChangedTests = changed.every(isTest)
     if (runOnlyChangedTests) {
         testFiles = testFiles.filter(file =>
-            changed.includes(join(dirname(file), basename(file, '.js') + '.ts')),
+            ['.ts', '.tsx'].some(ext =>
+                changed.includes(join(dirname(file), basename(file, '.js') + ext)),
+            ),
         )
     }
     const success =

@@ -1,0 +1,11 @@
+{
+  "name": "jsx-fixture",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "riddance": {
+    "jsx": true
+  }
+}

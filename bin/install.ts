@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { dependantPackages } from '../lib/dependencies.js'
 import { setup } from '../lib/env.js'
 import { formatFiles } from '../lib/formatter.js'
 import { isCodeClean } from '../lib/git.js'
@@ -31,7 +32,10 @@ async function install(dir: string) {
 
     if (isAlreadyInstalled) {
         if (await isCodeClean(dir)) {
-            const fixed = await fixLints(dir, '**/*.ts')
+            const fixed = await fixLints(
+                dir,
+                (await dependantPackages(dir)).jsx ? '**/*.{ts,tsx}' : '**/*.ts',
+            )
             if (fixed.length !== 0) {
                 await formatFiles(dir, fixed)
                 console.error('Fixes applied, please review carefully.')

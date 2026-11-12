@@ -1,7 +1,7 @@
 {
   "overrides": [
     {
-      "files": ["*.ts", "eslint.config.mjs"],
+      "files": ["*.ts", "*.tsx", "eslint.config.mjs"],
       "options": {
         "trailingComma": "all",
         "semi": false,

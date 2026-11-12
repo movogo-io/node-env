@@ -4,17 +4,19 @@ import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 export async function dependantPackages(path: string) {
-    const { dependencies, devDependencies, allowScripts } = JSON.parse(
+    const { dependencies, devDependencies, allowScripts, riddance } = JSON.parse(
         await readFile(join(path, 'package.json'), 'utf-8'),
     ) as {
         dependencies?: { [p: string]: string }
         devDependencies?: { [p: string]: string }
         allowScripts?: { [p: string]: boolean }
+        riddance?: { jsx?: unknown }
     }
     return {
         dependencies: await readPackageJsonFiles(path, dependencies),
         devDependencies: await readPackageJsonFiles(path, devDependencies),
         allowScripts,
+        jsx: riddance?.jsx === true,
     }
 }
 
